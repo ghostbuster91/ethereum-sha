@@ -26,7 +26,7 @@ class FunctionIdentifierCalculatorListener : SolidityBaseListener() {
     override fun enterFunctionDefinition(ctx: SolidityParser.FunctionDefinitionContext) {
         val functionName = ctx.identifier().Identifier().text
         val parameters = ctx.parameterList().parameter().joinToString(",") { it.typeName().text }
-        val message = "$functionName($parameters)"
-        println("$message ${Hash.sha3String(message).drop(2).take(8)}")
+        val signature = "$functionName($parameters)"
+        println("$signature ${Hash.sha3String(signature).drop(2).take(8)}")
     }
 }
