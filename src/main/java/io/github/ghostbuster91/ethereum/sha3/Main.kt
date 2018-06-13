@@ -16,15 +16,9 @@ fun main(args: Array<String>) {
     ArgParser(args)
             .parseInto(::ParsedArgs)
             .run {
-                val parserFacade = ParserFacade()
-                val sourceUnitContext = parserFacade.parse(File(input))
-                val collector = FunctionIdentifierCollector()
-                ParseTreeWalker.DEFAULT.walk(collector, sourceUnitContext)
-                val hashesToFunctions = collector.functions
-                        .groupBy { it.hash }
-                        .mapValues { it.value.map { it.signature } }
-                printCollisions(hashesToFunctions)
-                if (hashesToFunctions.any { (_, signature) -> signature.size > 1 }) {
+                val collisions = findCollisions(File(input).readText())
+                printCollisions(collisions)
+                if (collisions.isNotEmpty()) {
                     exitProcess(1)
                 } else {
                     println("Zero collisions detected.")
@@ -33,12 +27,21 @@ fun main(args: Array<String>) {
             }
 }
 
+fun findCollisions(code: String): Map<String, List<String>> {
+    val parserFacade = ParserFacade()
+    val sourceUnitContext = parserFacade.parse(code)
+    val collector = FunctionIdentifierCollector()
+    ParseTreeWalker.DEFAULT.walk(collector, sourceUnitContext)
+    val hashesToFunctions = collector.functions
+            .groupBy { it.hash }
+            .mapValues { it.value.map { it.signature } }
+    return hashesToFunctions.filter { it.value.size > 1 }
+}
+
 private fun printCollisions(functionsWithIds: Map<String, List<String>>) {
     functionsWithIds
             .forEach { (hash, signatures) ->
-                if (signatures.size > 1) {
-                    printCollision(signatures, hash)
-                }
+                printCollision(signatures, hash)
             }
 }
 
