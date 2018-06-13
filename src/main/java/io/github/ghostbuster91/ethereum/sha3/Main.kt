@@ -27,27 +27,26 @@ fun main(args: Array<String>) {
             }
 }
 
-fun findCollisions(code: String): Map<String, List<String>> {
+fun findCollisions(code: String): List<Function> {
     val parserFacade = ParserFacade()
     val sourceUnitContext = parserFacade.parse(code)
     val collector = FunctionIdentifierCollector()
     ParseTreeWalker.DEFAULT.walk(collector, sourceUnitContext)
-    val hashesToFunctions = collector.functions
-            .groupBy { it.hash }
-            .mapValues { it.value.map { it.signature } }
-    return hashesToFunctions.filter { it.value.size > 1 }
+    val hashesToFunctions = collector.contractToFunctions
+            .groupBy { it.identifier  + it.parentContract }
+    return hashesToFunctions.filter { it.value.size > 1 }.flatMap { it.value }
 }
 
-private fun printCollisions(functionsWithIds: Map<String, List<String>>) {
+private fun printCollisions(functionsWithIds: List<Function>) {
     functionsWithIds
             .forEach { (hash, signatures) ->
                 printCollision(signatures, hash)
             }
 }
 
-private fun printCollision(signatures: List<String>, hash: String) {
+private fun printCollision(signatures: String, hash: String) {
     println("Collision detected!")
-    println("Following functions have the same evm identifier:")
+    println("Following contractToFunctions have the same evm identifier:")
     signatures.forEach {
         println("$it => $hash")
     }
@@ -55,20 +54,21 @@ private fun printCollision(signatures: List<String>, hash: String) {
 
 class FunctionIdentifierCollector : SolidityBaseListener() {
 
-    val functions = mutableListOf<Function>()
+    private var currentContract: String? = null
+    val contractToFunctions = mutableListOf<Function>()
 
     override fun enterFunctionDefinition(ctx: SolidityParser.FunctionDefinitionContext) {
         val functionName = ctx.identifier().Identifier().text
         val parameters = ctx.parameterList().parameter().joinToString(",") { it.typeName().text }
         val signature = "$functionName($parameters)"
-        functions.add(signature to Hash.sha3String(signature).drop(2).take(8))
+        val identifier = Hash.sha3String(signature).drop(2).take(8)
+        contractToFunctions.add(Function(currentContract!!,signature,identifier))
+    }
+
+    override fun enterContractDefinition(ctx: SolidityParser.ContractDefinitionContext) {
+        val contractName = ctx.identifier().Identifier().text
+        currentContract = contractName
     }
 }
 
-typealias Function = Pair<String, String>
-
-val Function.signature: String
-    get() = this.first
-
-val Function.hash: String
-    get() = this.second
+data class Function(val parentContract: String, val signature: String, val identifier: String)
