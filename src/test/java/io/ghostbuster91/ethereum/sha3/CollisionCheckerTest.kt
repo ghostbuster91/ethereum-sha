@@ -12,5 +12,11 @@ class CollisionCheckerTest {
         Assert.assertEquals(mapOf("67e43e43" to listOf("gsf()", "tgeo()")), findCollisions(code))
     }
 
+    @Test
+    fun shouldNotFindFalseCollision() {
+        val code = readFile("ZeroCollision.sol")
+        Assert.assertEquals(emptyMap<String, List<String>>(), findCollisions(code))
+    }
+
     private fun readFile(fileName: String) = javaClass.classLoader.getResource(fileName).readText()
 }
