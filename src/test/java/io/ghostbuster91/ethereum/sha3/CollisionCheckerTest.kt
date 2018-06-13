@@ -27,5 +27,11 @@ class CollisionCheckerTest {
         Assert.assertEquals(emptyList<Function>(), findCollisions(code))
     }
 
+    @Test
+    fun name() {
+        val code = readFile("InheritanceContracts.sol")
+        Assert.assertEquals(false, findCollisions(code).isEmpty())
+    }
+
     private fun readFile(fileName: String) = javaClass.classLoader.getResource(fileName).readText()
 }

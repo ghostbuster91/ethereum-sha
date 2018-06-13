@@ -1,9 +1,7 @@
 package io.github.ghostbuster91.ethereum.sha3
 
 import com.xenomachina.argparser.ArgParser
-import io.github.ghostbuster91.ethereum.sha3.parser.SolidityBaseListener
 import io.github.ghostbuster91.ethereum.sha3.parser.SolidityParser
-import org.antlr.v4.runtime.tree.ParseTreeWalker
 import org.web3j.crypto.Hash
 import java.io.File
 import kotlin.system.exitProcess
@@ -30,10 +28,13 @@ fun main(args: Array<String>) {
 fun findCollisions(code: String): List<Function> {
     val parserFacade = ParserFacade()
     val sourceUnitContext = parserFacade.parse(code)
-    val collector = FunctionIdentifierCollector()
-    ParseTreeWalker.DEFAULT.walk(collector, sourceUnitContext)
-    val hashesToFunctions = collector.contractToFunctions
-            .groupBy { it.identifier  + it.parentContract }
+    val list = sourceUnitContext.contractDefinition().flatMap { contract ->
+        contract.contractPart().map {
+            createFunction(it.functionDefinition(), contract.identifier().text)
+        }
+    }
+    val hashesToFunctions = list
+            .groupBy { it.identifier + it.parentContract }
     return hashesToFunctions.filter { it.value.size > 1 }.flatMap { it.value }
 }
 
@@ -52,23 +53,14 @@ private fun printCollision(signatures: String, hash: String) {
     }
 }
 
-class FunctionIdentifierCollector : SolidityBaseListener() {
-
-    private var currentContract: String? = null
-    val contractToFunctions = mutableListOf<Function>()
-
-    override fun enterFunctionDefinition(ctx: SolidityParser.FunctionDefinitionContext) {
-        val functionName = ctx.identifier().Identifier().text
-        val parameters = ctx.parameterList().parameter().joinToString(",") { it.typeName().text }
-        val signature = "$functionName($parameters)"
-        val identifier = Hash.sha3String(signature).drop(2).take(8)
-        contractToFunctions.add(Function(currentContract!!,signature,identifier))
-    }
-
-    override fun enterContractDefinition(ctx: SolidityParser.ContractDefinitionContext) {
-        val contractName = ctx.identifier().Identifier().text
-        currentContract = contractName
-    }
-}
 
 data class Function(val parentContract: String, val signature: String, val identifier: String)
+
+private fun createFunction(ctx: SolidityParser.FunctionDefinitionContext, contractName: String): Function {
+    val functionName = ctx.identifier().Identifier().text
+    val parameters = ctx.parameterList().parameter().joinToString(",") { it.typeName().text }
+    val signature = "$functionName($parameters)"
+    val identifier = Hash.sha3String(signature).drop(2).take(8)
+    val function = Function(contractName, signature, identifier)
+    return function
+}
