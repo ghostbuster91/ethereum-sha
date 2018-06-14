@@ -68,20 +68,20 @@ private fun extractContractFunctions(contract: SolidityParser.ContractDefinition
     }
 }
 
-private fun printCollisions(functionsWithIds: Set<ContractFunction>) {
-    functionsWithIds
-            .forEach { (contract, function) ->
+private fun printCollisions(functions: Set<ContractFunction>) {
+    functions.groupBy { it.contractName }
+            .mapValues { it.value.map { it.function } }
+            .forEach { (contract, functions)->
                 println("Collision detected!")
                 println("For contract: $contract")
                 println("Following functions have the same evm identifier:")
-                printCollision(function.signature, function.identifier)
+                functions
+                        .forEach { it ->
+                            println("${it.signature} => ${it.identifier}")
+                        }
+                println()
             }
-}
 
-private fun printCollision(signatures: String, hash: String) {
-    signatures.forEach {
-        println("$it => $hash")
-    }
 }
 
 data class Function(val signature: String, val identifier: String)
