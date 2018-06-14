@@ -20,6 +20,7 @@ version '1.0-SNAPSHOT'
 
 apply plugin: 'kotlin'
 apply plugin: 'me.champeau.gradle.antlr4'
+apply plugin: 'maven'
 
 antlr4 {
     source = file('src/main/antlr')
