@@ -18,7 +18,6 @@ buildscript {
 group 'io.github.ghostbuster91'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'me.champeau.gradle.antlr4'
 
@@ -57,12 +56,10 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-task fatJar(type: Jar) {
+jar {
     manifest {
-        attributes 'Implementation-Title': 'Python-Parser',
-                'Implementation-Version': '0.0.1'
+        attributes 'Main-Class': 'io.github.ghostbuster91.ethereum.sha3.MainKt'
     }
-    baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
