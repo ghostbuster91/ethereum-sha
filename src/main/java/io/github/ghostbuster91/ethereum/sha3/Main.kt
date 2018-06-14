@@ -25,42 +25,73 @@ fun main(args: Array<String>) {
             }
 }
 
-fun findCollisions(code: String): List<Function> {
+fun findCollisions(code: String): Set<ContractFunction> {
     val parserFacade = ParserFacade()
     val sourceUnitContext = parserFacade.parse(code)
-    val list = sourceUnitContext.contractDefinition().flatMap { contract ->
-        contract.contractPart().map {
-            createFunction(it.functionDefinition(), contract.identifier().text)
-        }
-    }
-    val hashesToFunctions = list
-            .groupBy { it.identifier + it.parentContract }
-    return hashesToFunctions.filter { it.value.size > 1 }.flatMap { it.value }
+    val contracts = sourceUnitContext.contractDefinition()
+    val functions = contracts
+            .flatMap { contract ->
+                extractAllFunctions(contract, contracts)
+            }
+    val hashesToFunctions = functions.groupBy { it.function.identifier + it.contractName }
+    return hashesToFunctions.filter { it.value.size > 1 }.flatMap { it.value }.toSet()
 }
 
-private fun printCollisions(functionsWithIds: List<Function>) {
+private fun extractAllFunctions(contract: SolidityParser.ContractDefinitionContext, contracts: List<SolidityParser.ContractDefinitionContext>): List<ContractFunction> {
+    val inheritedContracts = inheritedContracts(contract, contracts)
+    val functions = inheritedContracts.flatMap(::extractContractFunctions) + extractContractFunctions(contract)
+    return assignedFunctions(functions, contract)
+}
+
+private fun assignedFunctions(functions: List<Function>, contract: SolidityParser.ContractDefinitionContext) =
+        functions.map { ContractFunction(contract.identifier().text, it) }
+
+private fun inheritedContracts(contract: SolidityParser.ContractDefinitionContext, contracts: List<SolidityParser.ContractDefinitionContext>): List<SolidityParser.ContractDefinitionContext> {
+    return contract.inheritanceSpecifier()
+            .flatMap { inheritanceSpecifier ->
+                findContract(contracts, inheritanceSpecifier.userDefinedTypeName())
+            }
+}
+
+private fun findContract(contracts: List<SolidityParser.ContractDefinitionContext>, userDefinedTypeNameContext: SolidityParser.UserDefinedTypeNameContext): List<SolidityParser.ContractDefinitionContext> {
+    return userDefinedTypeNameContext.identifier()
+            .map { derivedContract ->
+                derivedContract.Identifier().text
+            }.map { derivedContractName ->
+                contracts.first { it.identifier().Identifier().text == derivedContractName }
+            }
+}
+
+private fun extractContractFunctions(contract: SolidityParser.ContractDefinitionContext): List<Function> {
+    return contract.contractPart().map {
+        createFunction(it.functionDefinition())
+    }
+}
+
+private fun printCollisions(functionsWithIds: Set<ContractFunction>) {
     functionsWithIds
-            .forEach { (hash, signatures) ->
-                printCollision(signatures, hash)
+            .forEach { (contract, function) ->
+                println("Collision detected!")
+                println("For contract: $contract")
+                println("Following functions have the same evm identifier:")
+                printCollision(function.signature, function.identifier)
             }
 }
 
 private fun printCollision(signatures: String, hash: String) {
-    println("Collision detected!")
-    println("Following contractToFunctions have the same evm identifier:")
     signatures.forEach {
         println("$it => $hash")
     }
 }
 
+data class Function(val signature: String, val identifier: String)
 
-data class Function(val parentContract: String, val signature: String, val identifier: String)
-
-private fun createFunction(ctx: SolidityParser.FunctionDefinitionContext, contractName: String): Function {
+private fun createFunction(ctx: SolidityParser.FunctionDefinitionContext): Function {
     val functionName = ctx.identifier().Identifier().text
     val parameters = ctx.parameterList().parameter().joinToString(",") { it.typeName().text }
     val signature = "$functionName($parameters)"
     val identifier = Hash.sha3String(signature).drop(2).take(8)
-    val function = Function(contractName, signature, identifier)
-    return function
+    return Function(signature, identifier)
 }
+
+data class ContractFunction(val contractName: String, val function: Function)
