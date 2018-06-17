@@ -19,7 +19,6 @@ group 'io.github.ghostbuster91'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'kotlin'
-apply plugin: 'maven'
 apply plugin: 'application'
 apply plugin: 'me.champeau.gradle.antlr4'
 
@@ -67,5 +66,3 @@ jar {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
-
-install.dependsOn installDist
