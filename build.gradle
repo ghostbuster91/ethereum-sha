@@ -32,7 +32,6 @@ compileJava.dependsOn antlr4
 sourceCompatibility = 1.8
 
 sourceSets.main.java.srcDirs += antlr4.output
-//sourceSets.main.kotlin.srcDirs += antlr4.output
 
 repositories {
     mavenCentral()
@@ -41,7 +40,6 @@ repositories {
 configurations {
     compile.extendsFrom antlr4
 }
-
 
 dependencies {
     compile "com.xenomachina:kotlin-argparser:2.0.7"
@@ -59,11 +57,3 @@ compileTestKotlin {
 }
 
 mainClassName = 'io.github.ghostbuster91.ethereum.sha3.MainKt'
-
-jar {
-    manifest {
-        attributes 'Main-Class': 'io.github.ghostbuster91.ethereum.sha3.MainKt'
-    }
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
-}
