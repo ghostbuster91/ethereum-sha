@@ -1,7 +1,6 @@
 package io.github.ghostbuster91.ethereum.sha3
 
 import com.xenomachina.argparser.ArgParser
-import io.github.ghostbuster91.ethereum.sha3.parser.SolidityParser
 import org.web3j.crypto.Hash
 import java.io.File
 import kotlin.system.exitProcess

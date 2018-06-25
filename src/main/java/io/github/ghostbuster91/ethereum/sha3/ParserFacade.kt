@@ -1,7 +1,7 @@
 package io.github.ghostbuster91.ethereum.sha3
 
-import io.github.ghostbuster91.ethereum.sha3.parser.SolidityLexer
-import io.github.ghostbuster91.ethereum.sha3.parser.SolidityParser
+import SolidityLexer
+import SolidityParser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 

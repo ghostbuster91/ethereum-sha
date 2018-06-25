@@ -6,7 +6,7 @@ buildscript {
         mavenCentral()
         maven {
             name 'JFrog OSS snapshot repo'
-            url  'https://oss.jfrog.org/oss-snapshot-local/'
+            url 'https://oss.jfrog.org/oss-snapshot-local/'
         }
     }
     dependencies {
@@ -25,13 +25,14 @@ apply plugin: 'maven'
 
 antlr4 {
     source = file('src/main/antlr')
-    output = file('src/main/java/io/github/ghostbuster91/ethereum/sha3/parser')
-    extraArgs = ['-package', 'io.github.ghostbuster91.ethereum.sha3.parser']
+    outputs.dir file("$buildDir/generated-src")
 }
+
 compileJava.dependsOn antlr4
+
 sourceCompatibility = 1.8
 
-sourceSets.main.java.srcDirs += antlr4.output
+sourceSets.main.java.srcDirs += antlr4.outputs.files
 
 repositories {
     mavenCentral()
@@ -43,7 +44,7 @@ configurations {
 
 dependencies {
     compile "com.xenomachina:kotlin-argparser:2.0.7"
-    compile ('org.web3j:core:3.4.0')
+    compile('org.web3j:core:3.4.0')
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
     testCompile group: 'junit', name: 'junit', version: '4.12'
